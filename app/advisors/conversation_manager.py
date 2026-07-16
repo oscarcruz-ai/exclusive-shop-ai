@@ -1,6 +1,11 @@
+from app.services.brand_service import BrandService
+
 class ConversationManager:
 
     BASE_URL = "https://www.exclusiveshopperu.com"
+
+    def __init__(self):
+        self.brand_service = BrandService()
 
     CATEGORY_URLS = {
         "zapatillas": "/categoria/zapatillas/",
@@ -138,9 +143,9 @@ class ConversationManager:
                     "Algunas de nuestras marcas son:\n"
                     "• Nike\n"
                     "• Jordan\n"
-                    "• Adidas\n"
-                    "• New Balance\n"
-                    "• Puma"
+                    "• Off-White\n"
+                    "• Supreme\n"
+                    "• Louis Vuitton"
                 )
 
             else:
@@ -150,6 +155,30 @@ class ConversationManager:
                 )
 
             return respuesta
+
+        # ==========================================
+        # MARCA + TEXTO ADICIONAL
+        # ==========================================
+
+        if len(marcas) == 1 and not productos:
+
+            marca = marcas[0]
+
+            texto_norm = texto.lower()
+
+            if texto_norm != marca.lower():
+
+                url = self.brand_service.obtener_url(marca)
+
+                return (
+                    f"👟 Tenemos una amplia colección de productos {marca}.\n\n"
+                    "Puedes ver todos los modelos disponibles aquí:\n\n"
+                    f"{url}\n\n"
+                    "📦 Tiempo estimado de entrega: 16 a 18 días hábiles.\n\n"
+                    "🚚 Realizamos envíos a todo el Perú.\n\n"
+                    "✅ Todos nuestros productos son 100% originales.\n\n"
+                    "¿Puedo ayudarte con algún otro producto o tienes alguna otra consulta?"
+                )
 
         # ==========================================
         # SOLO MARCA
@@ -197,20 +226,9 @@ class ConversationManager:
                     "🥽 ¿Buscas Ray-Ban Meta o Meta Quest?"
                 )
 
-            slug = (
-                marca_lower
-                .replace("&", "")
-                .replace(" ", "-")
-                .replace("--", "-")
-            )
-
-            return (
-                "👟 ¡Excelente elección!\n\n"
-                f"Tenemos una amplia colección de zapatillas {marca}.\n\n"
-                "🔗 Explora todos los modelos aquí:\n"
-                f"{self.BASE_URL}/categoria/zapatillas/{slug}/\n\n"
-                f"¿Qué modelo {marca} estás buscando?"
-            )
+            # Las marcas normales se resuelven en CatalogSearchService, que
+            # conoce la URL real del catálogo y usa un cierre consistente.
+            return None
 
         # ==========================================
         # VARIAS MARCAS

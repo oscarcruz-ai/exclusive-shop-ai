@@ -1,0 +1,33 @@
+# Entorno virtual
+.venv/
+
+# Git
+.git/
+.gitignore
+
+# Variables de entorno
+.env
+
+# Caché de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code
+.vscode/
+
+# Tests
+tests/
+
+# Documentación
+docs/
+
+# Recursos de desarrollo
+assets/
+
+# Caché de pytest
+.pytest_cache/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

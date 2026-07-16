@@ -1,6 +1,7 @@
 from langchain_core.messages import HumanMessage, AIMessage
 
-from app.rag import preguntar
+from app.router.query_router import QueryRouter
+from app.logger import logger
 
 
 class ExclusiveShopBot:
@@ -8,6 +9,8 @@ class ExclusiveShopBot:
     def __init__(self):
 
         self.historial = []
+
+        self.router = QueryRouter()
 
     def responder(
         self,
@@ -33,21 +36,39 @@ class ExclusiveShopBot:
 
         try:
 
-            respuesta = preguntar(
+            logger.info(
+                "Procesando consulta del usuario..."
+            )
+
+            respuesta = self.router.responder(
                 pregunta=pregunta,
                 historial=historial_texto,
                 intent=intent
             )
 
+            logger.info(
+                "Respuesta generada correctamente."
+            )
+
         except Exception as e:
 
-            print("\n===== ERROR CHATBOT =====")
-            print(e)
-            print("=========================\n")
+            logger.exception(
+                "Error procesando la consulta."
+            )
 
             mensaje = str(e).upper()
 
+            if "GOOGLE_API_KEY" in mensaje:
+                return (
+                    "El asistente de IA no está configurado todavía. "
+                    "Puedes consultar el catálogo, marcas, envíos y tiempos de entrega."
+                )
+
             if "RESOURCE_EXHAUSTED" in mensaje or "429" in mensaje:
+
+                logger.warning(
+                    "Límite de solicitudes de IA alcanzado."
+                )
 
                 return (
                     "⚠️ En este momento el servicio de IA alcanzó el límite de solicitudes.\n\n"
@@ -67,6 +88,10 @@ class ExclusiveShopBot:
 
         self.historial.append(
             AIMessage(content=respuesta)
+        )
+
+        logger.info(
+            "Conversación almacenada en el historial."
         )
 
         return respuesta

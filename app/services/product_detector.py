@@ -103,6 +103,44 @@ class ProductDetector:
             ]
 
         # =====================================
+        # Evitar que consultas de marca + texto
+        # (Nike Air Max, Jordan 1 Low, etc.)
+        # se traten como un producto exacto.
+        # ConversationManager decidirá si debe
+        # redirigir a la categoría de la marca.
+        # =====================================
+
+        if resultado["brands"] and resultado["products"]:
+
+            marca = normalizar_texto(resultado["brands"][0])
+            texto_consulta = texto_normalizado
+
+            marcas_categoria = {
+                "nike",
+                "adidas",
+                "jordan",
+                "apple",
+                "oakley",
+            }
+
+            if marca in marcas_categoria and texto_consulta != marca:
+                resultado["products"] = []
+
+            elif marca in {"ray-ban", "ray ban", "meta"}:
+
+                modelos_meta = {
+                    "wayfarer",
+                    "headliner",
+                    "skyler",
+                }
+
+                if not any(
+                    modelo in texto_consulta
+                    for modelo in modelos_meta
+                ):
+                    resultado["products"] = []
+
+        # =====================================
         # Detectar categorías
         # =====================================
 

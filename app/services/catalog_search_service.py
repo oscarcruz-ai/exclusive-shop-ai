@@ -1,5 +1,8 @@
 from app.services.catalog_service import CatalogService
 from app.utils.text_utils import normalizar_texto
+from app.services.brand_service import BrandService
+from app.services.category_service import CategoryService
+from app.services.response_builder_service import ResponseBuilderService
 
 
 class CatalogSearchService:
@@ -9,6 +12,9 @@ class CatalogSearchService:
     def __init__(self):
 
         self.catalog = CatalogService()
+        self.brand_service = BrandService()
+        self.category_service = CategoryService()
+        self.response_builder = ResponseBuilderService()
 
         # Últimas opciones mostradas al usuario
         self.last_options = []
@@ -33,7 +39,7 @@ class CatalogSearchService:
                 df["Categorías limpias"]
                 .fillna("")
                 .apply(normalizar_texto)
-                .str.contains(categoria)
+                .str.contains(categoria, regex=False)
             ]
 
         # Marca
@@ -48,7 +54,7 @@ class CatalogSearchService:
                 df["Marcas"]
                 .fillna("")
                 .apply(normalizar_texto)
-                .str.contains(marca)
+                .str.contains(marca, regex=False)
             ]
 
         # Producto
@@ -63,7 +69,7 @@ class CatalogSearchService:
                 df["Nombre"]
                 .fillna("")
                 .apply(normalizar_texto)
-                .str.contains(producto)
+                .str.contains(producto, regex=False)
             ]
 
         return df
@@ -126,24 +132,12 @@ class CatalogSearchService:
 
                 producto = coincidencia.iloc[0]
 
-                respuesta = (
-                    "✅ ¡Lo encontré!\n\n"
-                    f"{producto['Nombre']}"
-                )
-
-                if (
-                    "URL" in producto.index
-                    and str(producto["URL"]).strip()
-                ):
-
-                    respuesta += (
-                        "\n\n🔗 Ver producto:\n"
-                        f"{producto['URL']}"
-                    )
-
                 self.last_options = []
 
-                return respuesta
+                return self.response_builder.producto(
+                    nombre=producto["Nombre"],
+                    url=producto["URL"]
+                )
 
         # ======================================
         # Solo un resultado
@@ -153,24 +147,12 @@ class CatalogSearchService:
 
             producto = resultados.iloc[0]
 
-            respuesta = (
-                "✅ ¡Lo encontré!\n\n"
-                f"{producto['Nombre']}"
-            )
-
-            if (
-                "URL" in producto.index
-                and str(producto["URL"]).strip()
-            ):
-
-                respuesta += (
-                    "\n\n🔗 Ver producto:\n"
-                    f"{producto['URL']}"
-                )
-
             self.last_options = []
 
-            return respuesta
+            return self.response_builder.producto(
+                nombre=producto["Nombre"],
+                url=producto["URL"]
+            )
 
         # ======================================
         # Solo marca
@@ -182,17 +164,38 @@ class CatalogSearchService:
 
             marca = entidades["brands"][0]
 
-            slug = (
-                marca.lower()
-                .replace("&", "")
-                .replace(" ", "-")
+            url_marca = self.brand_service.obtener_url(
+                marca
             )
 
-            return (
-                f"👟 Tenemos una amplia colección de {marca}.\n\n"
-                "🔗 Explora todos los modelos aquí:\n"
-                f"{self.BASE_URL}/categoria/zapatillas/{slug}/\n\n"
-                f"¿Qué modelo {marca} estás buscando?"
+            return self.response_builder.marca(
+                marca=marca,
+                url=url_marca
+            )
+
+        # ======================================
+        # Solo categoría
+        # ======================================
+
+        if (
+            entidades["categories"]
+            and not entidades["brands"]
+            and not entidades["products"]
+        ):
+
+            self.last_options = []
+
+            categoria = entidades["categories"][0]
+
+            url_categoria = (
+                self.category_service.obtener_url(
+                    categoria
+                )
+            )
+
+            return self.response_builder.categoria(
+                categoria=categoria,
+                url=url_categoria
             )
 
         # ======================================
@@ -206,14 +209,10 @@ class CatalogSearchService:
             .tolist()
         )
 
-        # Guardar las opciones para la siguiente pregunta
         self.last_options = nombres
 
         respuesta = (
             "🔎 Encontré varios modelos relacionados.\n\n"
-        )
-
-        respuesta += (
             "Estas son las opciones disponibles:\n\n"
         )
 

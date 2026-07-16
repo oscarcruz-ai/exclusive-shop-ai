@@ -5,6 +5,8 @@ from app.config import (
     CSV_COLUMNS,
 )
 
+from app.utils.text_utils import normalizar_texto
+
 
 class CatalogService:
 
@@ -118,7 +120,7 @@ class CatalogService:
             self.df[CSV_COLUMNS["name"]]
             .astype(str)
             .str.lower()
-            .str.contains(nombre, na=False)
+            .str.contains(nombre, na=False, regex=False)
         ]
 
         return resultados
@@ -131,7 +133,7 @@ class CatalogService:
             self.df[CSV_COLUMNS["brand"]]
             .astype(str)
             .str.lower()
-            .str.contains(marca, na=False)
+            .str.contains(marca, na=False, regex=False)
         ]
 
         return resultados
@@ -144,11 +146,11 @@ class CatalogService:
             self.df[CSV_COLUMNS["category"]]
             .astype(str)
             .str.lower()
-            .str.contains(categoria, na=False)
+            .str.contains(categoria, na=False, regex=False)
         ]
 
         return resultados
-    
+
     def detectar_marcas(self, texto):
 
         texto_normalizado = (
@@ -167,3 +169,40 @@ class CatalogService:
                     marcas_encontradas.append(marca)
 
         return marcas_encontradas
+
+    # ==========================
+    # Índice automático de productos
+    # ==========================
+
+    def obtener_indice_productos(self):
+
+        indice = {}
+
+        for producto in self.obtener_nombres_productos():
+
+            nombre_normalizado = normalizar_texto(producto)
+
+            # Nombre completo
+            indice[nombre_normalizado] = producto
+
+            palabras = (
+                nombre_normalizado
+                .replace("(", "")
+                .replace(")", "")
+                .replace("-", " ")
+                .split()
+            )
+
+            for palabra in palabras:
+
+                palabra = palabra.strip()
+
+                if len(palabra) < 3:
+                    continue
+
+                indice.setdefault(
+                    palabra,
+                    producto
+                )
+
+        return indice

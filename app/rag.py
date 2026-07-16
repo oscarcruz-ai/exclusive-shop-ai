@@ -1,6 +1,7 @@
-from app.llm import llm
+from app.llm import get_llm
 from app.prompts.prompt_builder import construir_prompt
 from app.retrievers.smart_retriever import SmartRetriever
+from app.logger import logger
 
 smart_retriever = SmartRetriever()
 
@@ -10,9 +11,7 @@ def preguntar(pregunta, historial="", intent="general"):
     Busca documentos relevantes y genera una respuesta con Gemini.
     """
 
-    print("\n" + "=" * 80)
-    print(f"🔎 Consulta enviada al RAG: {pregunta}")
-    print("=" * 80)
+    logger.info(f"Consulta enviada al RAG: {pregunta}")
 
     # ==========================================
     # Recuperar documentos
@@ -23,26 +22,37 @@ def preguntar(pregunta, historial="", intent="general"):
         intent
     )
 
-    print(f"\n📄 Documentos encontrados: {len(documentos)}")
+    logger.info(
+        f"Documentos encontrados: {len(documentos)}"
+    )
 
     for i, doc in enumerate(documentos, start=1):
 
-        print("\n" + "-" * 60)
-        print(f"Documento {i}")
+        logger.info(
+            f"Documento {i}"
+        )
 
-        print("Metadata:")
-        print(doc.metadata)
+        logger.info(
+            f"Metadata: {doc.metadata}"
+        )
 
         contenido = doc.page_content
 
-        print(f"Tamaño: {len(contenido)} caracteres")
-
-        print("\nContenido:")
+        logger.info(
+            f"Tamaño del documento: {len(contenido)} caracteres"
+        )
 
         if len(contenido) > 500:
-            print(contenido[:500] + "...")
+
+            logger.info(
+                contenido[:500] + "..."
+            )
+
         else:
-            print(contenido)
+
+            logger.info(
+                contenido
+            )
 
     # ==========================================
     # Construir contexto
@@ -53,9 +63,9 @@ def preguntar(pregunta, historial="", intent="general"):
         for doc in documentos
     )
 
-    print("\n" + "=" * 80)
-    print(f"📏 Tamaño del contexto: {len(contexto)} caracteres")
-    print("=" * 80)
+    logger.info(
+        f"Tamaño del contexto: {len(contexto)} caracteres"
+    )
 
     # ==========================================
     # Construir prompt
@@ -67,21 +77,22 @@ def preguntar(pregunta, historial="", intent="general"):
         historial=historial
     )
 
-    print(f"📏 Tamaño del prompt: {len(prompt)} caracteres")
+    logger.info(
+        f"Tamaño del prompt: {len(prompt)} caracteres"
+    )
 
-    print("\n📝 Primeros 1500 caracteres del contexto:\n")
-
-    print(contexto[:1500])
+    logger.info(
+        f"Primeros 1500 caracteres del contexto:\n{contexto[:1500]}"
+    )
 
     # ==========================================
     # Llamar al LLM
     # ==========================================
 
-    respuesta = llm.invoke(prompt)
+    respuesta = get_llm().invoke(prompt)
 
-    print("\n" + "=" * 80)
-    print("🤖 Respuesta Gemini")
-    print("=" * 80)
-    print(respuesta.content)
+    logger.info(
+        "Respuesta generada por Gemini."
+    )
 
     return respuesta.content

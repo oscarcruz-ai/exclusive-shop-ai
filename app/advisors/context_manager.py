@@ -36,8 +36,6 @@ class ContextManager:
 
     def update(self, entities):
 
-        print(">>> UPDATE RECIBIÓ:", entities)
-
         categorias = entities.get("categories", [])
         marcas = entities.get("brands", [])
         productos = entities.get("products", [])
@@ -71,7 +69,9 @@ class ContextManager:
 
             nueva_marca = marcas[0]
 
-            if nueva_marca != self.context["brand"]:
+            # Una nueva consulta por marca o colección no debe conservar el
+            # producto anterior, incluso si pertenece a la misma marca.
+            if nueva_marca != self.context["brand"] or not productos:
 
                 self.context["brand"] = nueva_marca
                 self.context["product"] = None
@@ -89,13 +89,6 @@ class ContextManager:
 
             # Ya tenemos un producto concreto
             self.context["options"] = []
-
-        # ---------------------------------
-        # Debug
-        # ---------------------------------
-
-        print(">>> CONTEXTO DESPUÉS DE UPDATE:")
-        print(self.context)
 
     # =====================================
     # Guardar opciones sugeridas
