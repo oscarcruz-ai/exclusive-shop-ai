@@ -1,10 +1,12 @@
+import requests
 import streamlit as st
-from app.agents.sales_agent import SalesAgent
 from app.ui.home import render_home
 
 # ===================================
 # Configuración
 # ===================================
+
+API_URL = "https://api.exclusiveshopperu.com/ask"
 
 st.set_page_config(
     page_title="Exclusive Shop AI | Premium Shopping Assistant",
@@ -39,11 +41,38 @@ div.stButton > button{
 """, unsafe_allow_html=True)
 
 # ===================================
-# Inicialización de Estado
+# Función para consultar la API
 # ===================================
 
-if "agent" not in st.session_state:
-    st.session_state.agent = SalesAgent()
+def consultar_api(question: str) -> str:
+    try:
+        response = requests.post(
+            API_URL,
+            json={"question": question},
+            timeout=120
+        )
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        return data.get(
+            "answer",
+            "No se recibió una respuesta del asistente."
+        )
+
+    except requests.exceptions.Timeout:
+        return "⏳ El asistente tardó demasiado en responder."
+
+    except requests.exceptions.ConnectionError:
+        return "❌ No fue posible conectar con Exclusive Shop AI."
+
+    except Exception as e:
+        return f"❌ Error:\n\n{e}"
+
+# ===================================
+# Inicialización de Estado
+# ===================================
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -93,7 +122,7 @@ st.markdown(
 )
 
 # ===================================
-# Botones Home
+# Home
 # ===================================
 
 consulta = render_home()
@@ -108,7 +137,6 @@ if consulta:
 for message in st.session_state.messages:
 
     with st.chat_message(message["role"]):
-
         st.markdown(message["content"])
 
 # ===================================
@@ -124,7 +152,6 @@ prompt = st.chat_input("Escribe tu consulta...")
 if st.session_state.quick_question and not prompt:
 
     prompt = st.session_state.quick_question
-
     st.session_state.quick_question = None
 
 # ===================================
@@ -141,14 +168,13 @@ if prompt:
     )
 
     with st.chat_message("user"):
-
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
 
         with st.spinner("🔍 Buscando..."):
 
-            respuesta = st.session_state.agent.responder(prompt)
+            respuesta = consultar_api(prompt)
 
         st.markdown(respuesta)
 
@@ -159,7 +185,6 @@ if prompt:
             }
         )
 
-    # Limpiar el botón seleccionado
     st.session_state.selected_button = None
 
     st.rerun()
