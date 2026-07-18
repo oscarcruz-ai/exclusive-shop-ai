@@ -1,7 +1,12 @@
 services:
-  exclusive-shop-ai:
+  api:
     build: .
-    container_name: exclusive-shop-ai
+    container_name: exclusive-shop-api
+
+    command: >
+      uvicorn app.api.main:app
+      --host 0.0.0.0
+      --port 8000
 
     ports:
       - "8000:8000"
@@ -11,5 +16,29 @@ services:
 
     volumes:
       - ./data:/app/data
+
+    restart: unless-stopped
+
+  streamlit:
+    build: .
+    container_name: exclusive-shop-streamlit
+
+    command: >
+      streamlit run streamlit_app.py
+      --server.address=0.0.0.0
+      --server.port=8501
+      --server.headless=true
+
+    ports:
+      - "8501:8501"
+
+    env_file:
+      - .env
+
+    volumes:
+      - ./data:/app/data
+
+    depends_on:
+      - api
 
     restart: unless-stopped
