@@ -2,26 +2,39 @@
 
 <div align="center">
 
-Asistente inteligente de compras desarrollado con **Python**, **LangChain**, **Google Gemini** y **Retrieval-Augmented Generation (RAG)**.
+Asistente inteligente de compras desarrollado con *Python*, *FastAPI*, *LangChain*, *Google Gemini* y *Retrieval-Augmented Generation (RAG)*.
 
-Diseñado para responder preguntas en lenguaje natural, recomendar productos y asistir a los clientes de Exclusive Shop mediante Inteligencia Artificial.
+Diseñado para ayudar a los clientes de *Exclusive Shop* mediante Inteligencia Artificial, recomendando productos y respondiendo consultas en lenguaje natural.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
+![FastAPI](https://img.shields.io/badge/FastAPI-REST_API-009688?logo=fastapi)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Web_App-red?logo=streamlit)
 ![LangChain](https://img.shields.io/badge/LangChain-RAG-green)
 ![Google Gemini](https://img.shields.io/badge/Google-Gemini-blue)
 ![FAISS](https://img.shields.io/badge/FAISS-Vector_Search-orange)
+![Docker](https://img.shields.io/badge/Docker-Container-blue?logo=docker)
+![Oracle Cloud](https://img.shields.io/badge/Oracle-Cloud-red?logo=oracle)
 ![License](https://img.shields.io/badge/License-MIT-success)
 
 </div>
 
 ---
 
+# 🚀 Demo en Vivo
+
+| Servicio | URL |
+|----------|-----|
+| 💬 Chat IA | https://chat.exclusiveshopperu.com |
+| 📘 API Swagger | https://api.exclusiveshopperu.com/docs |
+| 🛒 Tienda Online | https://www.exclusiveshopperu.com |
+
+---
+
 # 📖 Descripción
 
-Exclusive Shop AI es un asistente inteligente de compras que combina **Inteligencia Artificial Generativa**, **Procesamiento de Lenguaje Natural (NLP)** y **Retrieval-Augmented Generation (RAG)** para ayudar a los clientes a encontrar productos mediante conversaciones naturales.
+Exclusive Shop AI es un asistente inteligente de compras que combina *Inteligencia Artificial Generativa*, *Procesamiento de Lenguaje Natural (NLP)* y *Retrieval-Augmented Generation (RAG)* para ayudar a los clientes a encontrar productos mediante conversaciones naturales.
 
-El asistente comprende la intención del usuario, identifica marcas, categorías y productos, consulta el catálogo de la tienda y genera respuestas inteligentes utilizando **Google Gemini**.
+El asistente comprende la intención del usuario, identifica marcas, categorías y productos, consulta el catálogo de la tienda y genera respuestas inteligentes utilizando Google Gemini.
 
 ---
 
@@ -34,10 +47,13 @@ El asistente comprende la intención del usuario, identifica marcas, categorías
 - 🛍️ Recomendación inteligente de productos
 - 🏷️ Detección automática de marcas
 - 📦 Detección de categorías
-- 💬 Gestión del contexto conversacional
-- ❓ Respuestas a preguntas frecuentes (FAQ)
-- ⚡ Arquitectura modular
-- 🌐 Interfaz web con Streamlit
+- 💬 Memoria conversacional
+- ❓ Preguntas frecuentes
+- 🌐 API REST con FastAPI
+- 💻 Interfaz Web con Streamlit
+- 🐳 Contenedores Docker
+- ☁️ Despliegue en Oracle Cloud
+- 🔒 HTTPS con Let's Encrypt
 
 ---
 
@@ -91,15 +107,33 @@ El asistente comprende la intención del usuario, identifica marcas, categorías
 
 ---
 
+# ☁️ Arquitectura de Despliegue
+
+- Oracle Cloud Infrastructure (OCI)
+- Docker Compose
+- FastAPI
+- Streamlit
+- FAISS
+- Google Gemini
+- LangChain
+- Nginx Reverse Proxy
+- HTTPS con Let's Encrypt
+
+---
+
 # 🛠️ Tecnologías Utilizadas
 
 | Tecnología | Uso |
 |------------|-----|
 | Python | Backend |
+| FastAPI | API REST |
 | Streamlit | Interfaz Web |
-| Google Gemini | Modelo LLM |
 | LangChain | Orquestación |
+| Google Gemini | LLM |
 | FAISS | Base Vectorial |
+| Docker | Contenedores |
+| Nginx | Reverse Proxy |
+| Oracle Cloud | Despliegue |
 | Pandas | Procesamiento del catálogo |
 
 ---
@@ -112,56 +146,62 @@ El asistente comprende la intención del usuario, identifica marcas, categorías
 
 # 🚀 Instalación
 
-Clonar el repositorio
+## Clonar el repositorio
 
-```bash
 git clone https://github.com/oscarcruz-ai/exclusive-shop-ai.git
-```
 
-Entrar al proyecto
+## Entrar al proyecto
 
-```bash
 cd exclusive-shop-ai
-```
 
-Crear entorno virtual
+## Crear entorno virtual
 
-```bash
 python -m venv .venv
-```
 
-Activar entorno
+## Activar entorno
 
-Windows
+### Windows
 
-```bash
 .venv\Scripts\activate
-```
 
-Instalar dependencias
+### Linux / macOS
 
-```bash
+source .venv/bin/activate
+
+## Instalar dependencias
+
 pip install -r requirements.txt
-```
 
-Ejecutar la aplicación
+## Ejecutar Streamlit
 
-```bash
 streamlit run streamlit_app.py
-```
+
+## Ejecutar la API
+
+uvicorn app.api.main:app --reload
+
+---
+
+# 🐳 Docker
+
+Construir el proyecto
+
+docker compose up -d --build
 
 ---
 
 # 💬 Ejemplos de Consultas
 
-Puedes realizar preguntas como:
-
-```text
+text
 Muéstrame lentes Ray-Ban Meta
 
 ¿Qué productos Apple tienen?
 
+Quiero un iPhone 17 Pro
+
 ¿Tienen zapatillas Nike?
+
+Muéstrame zapatillas Adidas
 
 ¿Cuáles son los métodos de pago?
 
@@ -169,64 +209,66 @@ Muéstrame lentes Ray-Ban Meta
 
 ¿Qué marcas venden?
 
-Muéstrame zapatillas Adidas
-
-Quiero un iPhone 17 Pro
-
 Recomiéndame unas zapatillas premium
-```
 
 ---
 
 # 🧠 Capacidades del Asistente
 
-El asistente es capaz de:
-
-- Comprender lenguaje natural.
-- Detectar la intención del usuario.
-- Identificar productos, marcas y categorías.
-- Mantener el contexto de la conversación.
-- Responder preguntas frecuentes.
-- Consultar el catálogo mediante búsqueda semántica.
-- Generar respuestas utilizando Google Gemini.
-- Recomendar productos inteligentes.
+- Comprende lenguaje natural.
+- Detecta la intención del usuario.
+- Identifica productos, marcas y categorías.
+- Mantiene el contexto de la conversación.
+- Responde preguntas frecuentes.
+- Consulta el catálogo mediante búsqueda semántica.
+- Genera respuestas con Google Gemini.
+- Recomienda productos relevantes.
 
 ---
 
-# 📈 Mejoras Futuras
+# 🗺️ Roadmap
 
-- Integración con WooCommerce API
-- Integración con WhatsApp Business
-- Inventario en tiempo real
-- Sincronización automática de precios
-- Comparador de productos
-- Recomendaciones personalizadas
-- Asistente por voz
-- Autenticación de clientes
+- [x] Chat IA
+- [x] API REST
+- [x] Streamlit
+- [x] FastAPI
+- [x] Docker
+- [x] Oracle Cloud
+- [x] HTTPS
+- [x] Dominio personalizado
+- [ ] WooCommerce API
+- [ ] Inventario en tiempo real
+- [ ] Comparador inteligente
+- [ ] WhatsApp Business
+- [ ] Recomendaciones personalizadas
+- [ ] Asistente por voz
 
 ---
 
 # 🎓 Proyecto Académico
 
-Desarrollado como parte del **Challenge de Inteligencia Artificial** de **Oracle Next Education (ONE)** y **Alura Latam**.
+Desarrollado como parte del *Challenge de Inteligencia Artificial* de *Oracle Next Education (ONE)* y *Alura Latam*.
 
 Este proyecto demuestra la implementación de:
 
 - Inteligencia Artificial Generativa
 - Retrieval-Augmented Generation (RAG)
 - Procesamiento de Lenguaje Natural (NLP)
-- Búsqueda Semántica
 - IA Conversacional
+- Búsqueda Semántica
 - Arquitectura Modular
+- Despliegue en Oracle Cloud
 
 ---
 
 # 👨‍💻 Autor
 
-**Oscar Cruz Salvador**
+*Oscar Cruz Salvador*
 
-GitHub: https://github.com/oscarcruz-ai
-
+- GitHub: https://github.com/oscarcruz-ai
+- 💬 Chat IA: https://chat.exclusiveshopperu.com
+- 🛒 Sitio web: https://www.exclusiveshopperu.com
+- 📘 API: https://api.exclusiveshopperu.com/docs
 
 ---
 
@@ -235,6 +277,9 @@ GitHub: https://github.com/oscarcruz-ai
 - Google Gemini
 - LangChain
 - Streamlit
+- FastAPI
 - FAISS
+- Docker
+- Oracle Cloud Infrastructure
 - Oracle Next Education
 - Alura Latam
