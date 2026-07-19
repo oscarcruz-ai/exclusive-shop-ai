@@ -49,8 +49,10 @@ with st.sidebar:
         use_container_width=True
     )
     st.markdown("---")
-    st.markdown("### 🛍️ Especializado en")
-    
+
+    st.markdown("### 📋 Asesor Premium")
+    st.markdown("*Especializado en:*")
+
     st.markdown("""
 - 👓 **Ray-Ban Meta**
 - 📱 **Apple**
