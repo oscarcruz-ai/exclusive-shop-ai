@@ -22,9 +22,6 @@ tests/
 # Documentación
 docs/
 
-# Recursos de desarrollo
-assets/
-
 # Caché de pytest
 .pytest_cache/
 
