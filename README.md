@@ -13,8 +13,7 @@ Diseñado para ayudar a los clientes de *Exclusive Shop* mediante Inteligencia A
 ![Google Gemini](https://img.shields.io/badge/Google-Gemini-blue)
 ![FAISS](https://img.shields.io/badge/FAISS-Vector_Search-orange)
 ![Docker](https://img.shields.io/badge/Docker-Container-blue?logo=docker)
-![Oracle Cloud](https://img.shields.io/badge/Oracle-Cloud-red?logo=oracle)
-![License](https://img.shields.io/badge/License-MIT-success)
+![Oracle Cloud](https://img.shields.io/badge/Oracle-Cloud-red)
 
 </div>
 
