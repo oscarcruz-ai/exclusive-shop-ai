@@ -1,24 +1,35 @@
+import re
+
+from app.utils.text_utils import normalizar_texto
+
+
 class SmallTalkManager:
 
     def responder(self, pregunta):
 
-        texto = pregunta.lower().strip()
+        texto = normalizar_texto(pregunta)
 
         # ======================
         # SALUDOS
         # ======================
 
+        if re.fullmatch(r"hola+", texto):
+            return (
+                "👋 ¡Hola! Bienvenido a Exclusive Shop.\n\n"
+                "Estoy aquí para ayudarte a encontrar el producto ideal.\n\n"
+                "¿Qué estás buscando hoy?"
+            )
+
         saludos = {
-            "hola",
             "buenas",
             "buenos dias",
-            "buen día",
             "buen dia",
             "buenas tardes",
             "buenas noches",
             "que tal",
             "hey",
             "hi",
+            "hello",
             "holi"
         }
 
@@ -36,7 +47,6 @@ class SmallTalkManager:
         despedidas = {
             "chau",
             "adios",
-            "adiós",
             "hasta luego",
             "nos vemos",
             "bye"
@@ -90,7 +100,6 @@ class SmallTalkManager:
         objeciones = {
             "muy caro",
             "esta caro",
-            "está caro",
             "caro",
             "muy costoso"
         }
@@ -124,9 +133,7 @@ class SmallTalkManager:
 
         garantia = {
             "garantia",
-            "garantía",
-            "tiene garantia",
-            "tiene garantía"
+            "tiene garantia"
         }
 
         if texto in garantia:
@@ -141,9 +148,7 @@ class SmallTalkManager:
 
         envios = {
             "envio",
-            "envío",
-            "envios",
-            "envíos"
+            "envios"
         }
 
         if texto in envios:

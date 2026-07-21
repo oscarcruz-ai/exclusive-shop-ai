@@ -97,16 +97,6 @@ class SalesAgent:
         # Detectar búsquedas parciales
         # =====================================
 
-        MARCAS_REDIRECCION = {
-            "nike",
-            "adidas",
-            "jordan",
-            "apple",
-            "ray-ban",
-            "ray ban",
-            "oakley",
-        }
-
         if (
             not entidades_originales["products"]
             and (
@@ -117,60 +107,35 @@ class SalesAgent:
 
             texto_normalizado = normalizar_texto(pregunta)
 
-            if entidades_originales["brands"]:
+            terminos_descartados = set()
 
-                marca = normalizar_texto(
-                    entidades_originales["brands"][0]
+            for entidad in (
+                entidades_originales["brands"]
+                + entidades_originales["categories"]
+            ):
+                terminos_descartados.update(
+                    normalizar_texto(entidad).split()
                 )
 
-                if (
-                    marca in MARCAS_REDIRECCION
-                    and texto_normalizado != marca
-                ):
-                    pass
+            terminos_producto = [
+                termino
+                for termino in texto_normalizado.split()
+                if termino not in terminos_descartados
+            ]
 
-                else:
+            # Solo descartamos expresiones de cortesía al inicio. Palabras
+            # como "de" pueden formar parte del nombre oficial del producto
+            # (por ejemplo, "Air Force 1 De lo Mio").
+            while (
+                terminos_producto
+                and terminos_producto[0] in self.STOPWORDS_BUSQUEDA
+            ):
+                terminos_producto.pop(0)
 
-                    terminos_descartados = set(self.STOPWORDS_BUSQUEDA)
-
-                    for entidad in (
-                        entidades_originales["brands"]
-                        + entidades_originales["categories"]
-                    ):
-                        terminos_descartados.update(
-                            normalizar_texto(entidad).split()
-                        )
-
-                    terminos_producto = [
-                        termino
-                        for termino in texto_normalizado.split()
-                        if termino not in terminos_descartados
-                    ]
-
-                    if len(terminos_producto) >= 2:
-                        entidades_originales["products"] = [
-                            " ".join(terminos_producto)
-                        ]
-
-            else:
-
-                terminos_descartados = set(self.STOPWORDS_BUSQUEDA)
-
-                for entidad in entidades_originales["categories"]:
-                    terminos_descartados.update(
-                        normalizar_texto(entidad).split()
-                    )
-
-                terminos_producto = [
-                    termino
-                    for termino in texto_normalizado.split()
-                    if termino not in terminos_descartados
+            if len(terminos_producto) >= 2:
+                entidades_originales["products"] = [
+                    " ".join(terminos_producto)
                 ]
-
-                if len(terminos_producto) >= 2:
-                    entidades_originales["products"] = [
-                        " ".join(terminos_producto)
-                    ]
 
         # =====================================
         # Completar entidades con el contexto

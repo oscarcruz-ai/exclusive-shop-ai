@@ -1,3 +1,5 @@
+import re
+
 from app.services.product_detector import ProductDetector
 from app.services.catalog_search_service import CatalogSearchService
 from app.services.intent_detector import IntentDetector
@@ -27,6 +29,46 @@ class QueryRouter:
             intent=intent,
         )
 
+    def _es_saludo(self, pregunta: str) -> bool:
+
+        texto = pregunta.lower().strip()
+
+        texto = re.sub(
+            r"[^\wáéíóúüñ\s]",
+            "",
+            texto
+        )
+
+        # Detecta: hola, holaa, holaaa, holaaaa...
+        if re.fullmatch(r"hola+", texto):
+            return True
+
+        saludos = {
+            "buenas",
+            "buenos dias",
+            "buenos días",
+            "buenas tardes",
+            "buenas noches",
+            "hey",
+            "hi",
+            "hello"
+        }
+
+        return texto in saludos
+
+    def _es_consulta_invalida(self, pregunta: str) -> bool:
+
+        texto = pregunta.strip()
+
+        if not texto:
+            return True
+
+        # Solo emojis, signos o caracteres especiales
+        if not re.search(r"[A-Za-zÁÉÍÓÚáéíóúÑñ]", texto):
+            return True
+
+        return False
+
     def responder(
         self,
         pregunta,
@@ -35,6 +77,41 @@ class QueryRouter:
     ):
 
         logger.info(f"Pregunta recibida: {pregunta}")
+
+        # =====================================
+        # Saludos
+        # =====================================
+
+        if self._es_saludo(pregunta):
+
+            logger.info("Saludo detectado")
+
+            return (
+                "¡Hola! 👋\n\n"
+                "Soy el asistente inteligente de Exclusive Shop.\n\n"
+                "Puedo ayudarte a encontrar productos, comparar modelos y responder dudas sobre envíos, pagos y garantías.\n\n"
+                "¿Qué producto estás buscando hoy?"
+            )
+
+        # =====================================
+        # Consulta inválida
+        # =====================================
+
+        if self._es_consulta_invalida(pregunta):
+
+            logger.info("Consulta inválida")
+
+            return (
+                "No pude identificar tu consulta. 😊\n\n"
+                "Puedo ayudarte con:\n\n"
+                "• Productos\n"
+                "• Marcas\n"
+                "• Comparaciones\n"
+                "• Envíos\n"
+                "• Métodos de pago\n"
+                "• Garantías\n\n"
+                "¿Qué deseas buscar?"
+            )
 
         # =====================================
         # Preguntas frecuentes
@@ -73,7 +150,11 @@ class QueryRouter:
                 "Consulta enviada al RAG"
             )
 
-            return self._preguntar_rag(pregunta, historial, intent)
+            return self._preguntar_rag(
+                pregunta,
+                historial,
+                intent
+            )
 
         # =====================================
         # Detectar entidades
@@ -118,4 +199,8 @@ class QueryRouter:
             "No hubo coincidencias en el catálogo. Se consulta el RAG."
         )
 
-        return self._preguntar_rag(pregunta, historial, intent)
+        return self._preguntar_rag(
+            pregunta,
+            historial,
+            intent
+        )

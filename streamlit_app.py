@@ -1,11 +1,9 @@
 # streamlit_app.py
 # Interfaz reorganizada
 
-import requests
 import streamlit as st
+from app.agents.sales_agent import SalesAgent
 from app.ui.home import render_home
-
-API_URL = "https://api.exclusiveshopperu.com/ask"
 
 st.set_page_config(
     page_title="Exclusive Shop AI",
@@ -23,21 +21,21 @@ h3{text-align:center;margin-top:0 !important;margin-bottom:.8rem !important;}
 </style>
 """, unsafe_allow_html=True)
 
-def consultar_api(question):
+def consultar_agente(question):
     try:
-        r=requests.post(API_URL,json={"question":question},timeout=120)
-        r.raise_for_status()
-        return r.json().get("answer","No se recibió respuesta.")
-    except requests.exceptions.Timeout:
-        return "⏳ El asistente tardó demasiado en responder."
-    except requests.exceptions.ConnectionError:
-        return "❌ No fue posible conectar con Exclusive Shop AI."
-    except Exception as e:
-        return f"❌ Error:\n\n{e}"
+        return st.session_state.agent.responder(question)
+    except Exception:
+        return (
+            "⚠️ No pude procesar esa consulta en este momento. "
+            "Intenta escribir el nombre del producto, una marca o tu pregunta de nuevo."
+        )
 
 st.session_state.setdefault("messages",[])
 st.session_state.setdefault("quick_question",None)
 st.session_state.setdefault("selected_button",None)
+
+if "agent" not in st.session_state:
+    st.session_state.agent = SalesAgent()
 
 with st.sidebar:
     st.image("assets/logo-exclusive.png", 
@@ -88,7 +86,7 @@ if prompt:
         st.markdown(prompt)
     with st.chat_message("assistant"):
         with st.spinner("🤖 Consultando al asesor inteligente..."):
-            respuesta=consultar_api(prompt)
+            respuesta=consultar_agente(prompt)
         st.markdown(respuesta)
         st.session_state.messages.append({"role":"assistant","content":respuesta})
     st.session_state.selected_button=None

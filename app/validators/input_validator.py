@@ -28,20 +28,26 @@ class InputValidator:
 
         texto_lower = texto.lower()
 
-        # Letras repetidas
-        repetidas = [
-            "aaaa", "bbbb", "cccc", "dddd",
-            "eeee", "ffff", "gggg", "hhhh",
-            "iiii", "jjjj", "kkkk", "llll",
-            "mmmm", "nnnn", "oooo", "pppp",
-            "qqqq", "rrrr", "ssss", "tttt",
-            "uuuu", "vvvv", "wwww", "xxxx",
-            "yyyy", "zzzz"
-        ]
+        # Permitir saludos comunes
+        saludos = (
+            r"hola+"
+            r"|buenas"
+            r"|buenos dias"
+            r"|buenos días"
+            r"|buenas tardes"
+            r"|buenas noches"
+            r"|hey+"
+            r"|hi+"
+            r"|hello+"
+        )
 
-        for r in repetidas:
-            if r in texto_lower:
-                return "😊 Estoy para ayudarte a encontrar productos. ¿Qué estás buscando?"
+        if re.fullmatch(saludos, texto_lower):
+            return None
+
+        # Detectar mensajes formados únicamente por el mismo carácter repetido
+        # Ejemplos: aaaa, 1111, !!!!!, ____
+        if re.fullmatch(r"(.)\1{3,}", texto_lower):
+            return "😊 Estoy para ayudarte a encontrar productos. ¿Qué estás buscando?"
 
         # Palabras típicas sin sentido
         basura = {
