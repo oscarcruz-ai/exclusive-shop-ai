@@ -48,3 +48,6 @@ Thumbs.db
 # ==========================================
 *.tmp
 *.temp
+# Bases de datos locales de la demo
+data/*.sqlite3
+data/*.db
