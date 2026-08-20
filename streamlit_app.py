@@ -31,6 +31,11 @@ h3{text-align:center;margin-top:0 !important;margin-bottom:.8rem !important;}
 
 
 def consultar_agente(question):
+    respuesta = responder_seguimiento(question)
+
+    if respuesta is not None:
+        return respuesta
+
     try:
         return st.session_state.agent.responder(question)
     except Exception:
@@ -38,6 +43,97 @@ def consultar_agente(question):
             "⚠️ No pude procesar esa consulta en este momento. "
             "Intenta escribir el nombre del producto, una marca o tu pregunta de nuevo."
         )
+
+
+def es_consulta_seguimiento(texto):
+    texto = texto.casefold()
+
+    return any(
+        expresion in texto
+        for expresion in (
+            "seguimiento",
+            "tracking",
+            "rastrear",
+            "rastreame",
+            "donde esta mi pedido",
+            "dónde está mi pedido",
+            "estado de mi pedido",
+        )
+    )
+
+
+def extraer_numero_pedido(texto):
+    import re
+
+    coincidencia = re.search(r"(?:pedido|orden)\s*#?\s*(\d+)", texto, re.IGNORECASE)
+
+    if not coincidencia:
+        coincidencia = re.search(r"#(\d+)", texto)
+
+    return int(coincidencia.group(1)) if coincidencia else None
+
+
+def es_email_valido(texto):
+    import re
+
+    return bool(re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", texto.strip()))
+
+
+def responder_seguimiento(prompt):
+    """Gestiona el flujo de seguimiento dentro de la sesión del cliente."""
+    estado = st.session_state.get("tracking_estado")
+
+    if estado == "numero_pedido":
+        order_id = extraer_numero_pedido(prompt)
+
+        if not order_id:
+            return "Por favor, indícame el número de pedido. Ejemplo: **Pedido #42916**."
+
+        st.session_state.tracking_order_id = order_id
+        st.session_state.tracking_estado = "email"
+        return "Ahora indícame el correo que usaste al realizar la compra."
+
+    if estado == "email":
+        if not es_email_valido(prompt):
+            return "Ingresa el correo usado en la compra para verificar el pedido."
+
+        order_id = st.session_state.get("tracking_order_id")
+        st.session_state.tracking_estado = None
+        st.session_state.tracking_order_id = None
+
+        resultado = st.session_state.agent.consultar_seguimiento_autorizado(
+            order_id,
+            prompt,
+        )
+
+        if not resultado.get("empresa"):
+            return resultado["mensaje"]
+
+        detalle_orden = ""
+        if resultado.get("numero_orden"):
+            detalle_orden = f"\n🧾 N.º de orden: `{resultado['numero_orden']}`"
+
+        return (
+            f"📦 **Pedido #{resultado['order_id']}**\n\n"
+            f"🚚 {resultado['empresa']}\n"
+            f"🔎 Código de seguimiento: `{resultado['codigo']}`"
+            f"{detalle_orden}\n\n"
+            f"🔗 [Rastrear en el portal oficial]({resultado['url']})\n\n"
+            f"{resultado['mensaje']}"
+        )
+
+    if not es_consulta_seguimiento(prompt):
+        return None
+
+    order_id = extraer_numero_pedido(prompt)
+
+    if not order_id:
+        st.session_state.tracking_estado = "numero_pedido"
+        return "Claro. Indícame el número de tu pedido para buscar el seguimiento."
+
+    st.session_state.tracking_order_id = order_id
+    st.session_state.tracking_estado = "email"
+    return "Para proteger tu información, indícame el correo usado en la compra."
 
 
 st.session_state.setdefault("messages", [])

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-
 from app.agents.sales_agent import SalesAgent
+from app.api.schemas import QuestionRequest, TrackingRequest
+from app.services.tracking_service import TrackingService
 
 app = FastAPI(
     title="Exclusive Shop AI",
@@ -10,10 +10,6 @@ app = FastAPI(
 )
 
 bot = SalesAgent()
-
-
-class QuestionRequest(BaseModel):
-    question: str
 
 
 @app.get("/")
@@ -41,3 +37,12 @@ def ask(request: QuestionRequest):
     return {
         "answer": respuesta
     }
+
+
+@app.post("/tracking")
+def tracking(request: TrackingRequest):
+    """Devuelve seguimiento únicamente tras comprobar el correo de compra."""
+    return TrackingService().consultar_pedido_autorizado(
+        order_id=request.order_id,
+        email=request.email,
+    )

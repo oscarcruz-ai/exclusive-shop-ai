@@ -5,6 +5,7 @@ from app.services.catalog_search_service import CatalogSearchService
 from app.services.topic_detector import TopicDetector
 from app.services.brand_service import BrandService
 from app.services.faq_service import FAQService
+from app.services.tracking_service import TrackingService
 from app.utils.text_utils import normalizar_texto
 
 from app.validators.input_validator import InputValidator
@@ -50,6 +51,21 @@ class SalesAgent:
         self.catalog_advisor = CatalogAdvisor()
 
         self.context_manager = ContextManager()
+
+    def consultar_seguimiento_pedido(self, order_id):
+        """Obtiene el seguimiento de un pedido ya autorizado.
+
+        La autenticación y la comprobación de que el pedido pertenece al cliente
+        deben ocurrir en la capa que llama al agente antes de usar este método.
+        """
+        return TrackingService().consultar_pedido(order_id)
+
+    def consultar_seguimiento_autorizado(self, order_id, email):
+        """Consulta tracking después de validar el correo de compra."""
+        return TrackingService().consultar_pedido_autorizado(
+            order_id=order_id,
+            email=email,
+        )
 
     def responder(self, pregunta):
 
