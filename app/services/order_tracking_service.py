@@ -1,0 +1,150 @@
+import re
+from pathlib import Path
+
+from app.integrations.order_store import OrderStore
+
+
+class OrderTrackingService:
+    EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+    ORDER_RE = re.compile(r"(?:pedido|orden)\s*(?:n[.°ºo]*\s*)?#?\s*(\d{4,})", re.IGNORECASE)
+
+    TRACKING_KEYWORDS = (
+        "donde esta mi pedido",
+        "dónde está mi pedido",
+        "estado de mi pedido",
+        "estado del pedido",
+        "seguir mi pedido",
+        "seguimiento de mi pedido",
+        "rastrear mi pedido",
+        "tracking de mi pedido",
+        "consultar mi pedido",
+        "ver mi pedido",
+        "mi pedido",
+    )
+
+    STATUS_LABELS = {
+        "pending": "Pendiente de pago",
+        "processing": "En procesamiento",
+        "on-hold": "En espera",
+        "completed": "Completado",
+        "cancelled": "Cancelado",
+        "refunded": "Reembolsado",
+        "failed": "Fallido",
+    }
+
+    def __init__(
+        self,
+        tenant_id: str = "exclusive-shop",
+        db_path: Path = Path("data/shopagent_orders.sqlite3"),
+    ):
+        self.tenant_id = tenant_id
+        self.orders = OrderStore(db_path)
+        self.pending_order_number: str | None = None
+
+    def responder(self, pregunta: str) -> str | None:
+        texto = pregunta.strip()
+        texto_lower = texto.lower()
+        email = self._extract_email(texto)
+        order_number = self._extract_order_number(texto)
+        is_tracking_query = self._is_tracking_query(texto_lower)
+
+        # Si ya pedimos el correo en el turno anterior, solo interceptamos
+        # una respuesta que realmente contenga un correo. Así no bloqueamos
+        # al usuario si cambia de tema.
+        if self.pending_order_number and email:
+            order_number = self.pending_order_number
+            return self._lookup_and_format(order_number, email)
+
+        if not is_tracking_query:
+            return None
+
+        if not order_number:
+            return (
+                "Claro. Para consultar el estado de tu compra, indícame el "
+                "número de pedido que aparece en tu confirmación de compra."
+            )
+
+        if not email:
+            self.pending_order_number = order_number
+            return (
+                f"Encontré el número de pedido **{order_number}**. Para proteger "
+                "la información de tu compra, indícame el correo electrónico "
+                "que utilizaste al realizar el pedido."
+            )
+
+        return self._lookup_and_format(order_number, email)
+
+    def _lookup_and_format(self, order_number: str, email: str) -> str:
+        order = self.orders.lookup_customer_order(
+            tenant_id=self.tenant_id,
+            order_number=order_number,
+            email=email,
+        )
+        self.pending_order_number = None
+
+        if not order:
+            return (
+                "No pude verificar un pedido con ese número y correo. Revisa "
+                "que ambos datos sean los mismos que utilizaste en la compra. "
+                "Por seguridad no puedo mostrar información si no coinciden."
+            )
+
+        status_raw = str(order.get("status") or "").strip().lower()
+        status = self.STATUS_LABELS.get(status_raw, status_raw.replace("-", " ").title())
+        carrier = str(order.get("tracking_carrier") or "").strip()
+        tracking_code = str(order.get("tracking_code") or "").strip()
+        carrier_order_number = str(order.get("tracking_order_number") or "").strip()
+
+        lines = [
+            f"✅ **Pedido {order_number} verificado**",
+            f"**Estado:** {status or 'Sin estado disponible'}",
+        ]
+
+        if carrier:
+            lines.append(f"**Transportista:** {carrier}")
+
+        if tracking_code:
+            lines.append(f"**Código de seguimiento:** {tracking_code}")
+
+        if carrier_order_number:
+            lines.append(f"**N.º de orden del transportista:** {carrier_order_number}")
+
+        if carrier.lower() == "shalom" and tracking_code and carrier_order_number:
+            lines.append(
+                "Puedes rastrearlo en la web oficial de Shalom: "
+                "https://shalom.com.pe/rastrea/"
+            )
+        elif carrier.lower().startswith("olva") and tracking_code:
+            lines.append(
+                "Puedes rastrearlo desde la web oficial de Olva Courier: "
+                "https://www.olvacourier.com/"
+            )
+        elif not tracking_code:
+            lines.append(
+                "Aún no tengo un código de seguimiento registrado para este pedido."
+            )
+
+        return "\n\n".join(lines)
+
+    @classmethod
+    def _extract_email(cls, text: str) -> str | None:
+        match = cls.EMAIL_RE.search(text)
+        return match.group(0).lower() if match else None
+
+    @classmethod
+    def _extract_order_number(cls, text: str) -> str | None:
+        match = cls.ORDER_RE.search(text)
+        if match:
+            return match.group(1)
+
+        # Permite frases naturales como "¿dónde está mi pedido? 42916".
+        if cls._is_tracking_query(text.lower()):
+            standalone = re.search(r"\b(\d{4,})\b", text)
+            if standalone:
+                return standalone.group(1)
+
+        return None
+
+    @classmethod
+    def _is_tracking_query(cls, text_lower: str) -> bool:
+        return any(keyword in text_lower for keyword in cls.TRACKING_KEYWORDS)
