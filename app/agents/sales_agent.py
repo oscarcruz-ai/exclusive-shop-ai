@@ -5,6 +5,7 @@ from app.services.catalog_search_service import CatalogSearchService
 from app.services.topic_detector import TopicDetector
 from app.services.brand_service import BrandService
 from app.services.faq_service import FAQService
+from app.services.order_tracking_service import OrderTrackingService
 from app.utils.text_utils import normalizar_texto
 
 from app.validators.input_validator import InputValidator
@@ -41,6 +42,8 @@ class SalesAgent:
 
         self.faq_service = FAQService()
 
+        self.order_tracking = OrderTrackingService()
+
         self.input_validator = InputValidator()
 
         self.small_talk_manager = SmallTalkManager()
@@ -55,6 +58,13 @@ class SalesAgent:
 
         if not isinstance(pregunta, str):
             return "Por favor, escribe tu consulta para poder ayudarte."
+
+        # El seguimiento de pedidos se resuelve antes que FAQ, catálogo o IA.
+        # El servicio exige número de pedido + correo antes de revelar datos.
+        respuesta = self.order_tracking.responder(pregunta)
+
+        if respuesta:
+            return respuesta
 
         # Estas respuestas no necesitan consultar el catálogo ni la IA.
         respuesta = self.input_validator.validar(pregunta)
