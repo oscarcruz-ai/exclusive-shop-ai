@@ -9,15 +9,17 @@ from pydantic import BaseModel, Field
 
 from app.agents.sales_agent import SalesAgent
 from app.analytics.analytics_store import AnalyticsStore
+from app.integrations.order_store import OrderStore
 
 app = FastAPI(
     title="Exclusive Shop AI",
     description="API del asistente inteligente de Exclusive Shop",
-    version="1.1.0",
+    version="1.2.0",
 )
 
 bot = SalesAgent()
 analytics = AnalyticsStore(Path("data/shopagent_events.sqlite3"))
+orders = OrderStore(Path("data/shopagent_orders.sqlite3"))
 
 
 class QuestionRequest(BaseModel):
@@ -121,9 +123,17 @@ def receive_integration_event(
         metadata=json.dumps(metadata, ensure_ascii=False, default=str),
     )
 
+    order_synced_at = None
+    if request.event in {"order.created", "order.updated"}:
+        try:
+            order_synced_at = orders.upsert(request.tenant_id, request.data)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     return {
         "ok": True,
         "event": request.event,
         "tenant_id": request.tenant_id,
         "recorded_at": recorded_at,
+        "order_synced_at": order_synced_at,
     }
