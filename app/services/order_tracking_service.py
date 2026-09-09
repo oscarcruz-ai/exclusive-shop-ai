@@ -18,8 +18,11 @@ class OrderTrackingService:
         "rastrear mi pedido",
         "tracking de mi pedido",
         "consultar mi pedido",
+        "consultar mi pedida",
         "ver mi pedido",
+        "ver mi pedida",
         "mi pedido",
+        "mi pedida",
     )
 
     STATUS_LABELS = {
@@ -40,6 +43,7 @@ class OrderTrackingService:
         self.tenant_id = tenant_id
         self.orders = OrderStore(db_path)
         self.pending_order_number: str | None = None
+        self.awaiting_order_number: bool = False
 
     def responder(self, pregunta: str) -> str | None:
         texto = pregunta.strip()
@@ -48,26 +52,43 @@ class OrderTrackingService:
         order_number = self._extract_order_number(texto)
         is_tracking_query = self._is_tracking_query(texto_lower)
 
-        # Si ya pedimos el correo en el turno anterior, solo interceptamos
-        # una respuesta que realmente contenga un correo. Así no bloqueamos
-        # al usuario si cambia de tema.
+        # Si ya pedimos el correo, esperamos un correo válido.
         if self.pending_order_number and email:
             order_number = self.pending_order_number
             return self._lookup_and_format(order_number, email)
+
+        # Si antes pedimos el número de pedido, aceptamos un número solo.
+        if self.awaiting_order_number:
+            standalone = re.fullmatch(r"\s*#?(\d{4,})\s*", texto)
+
+            if standalone:
+                order_number = standalone.group(1)
+                self.awaiting_order_number = False
+                self.pending_order_number = order_number
+
+                return (
+                    f"Encontré el número de pedido *{order_number}*. Para proteger "
+                    "la información de tu compra, indícame el correo electrónico "
+                    "que utilizaste al realizar el pedido."
+                )
 
         if not is_tracking_query:
             return None
 
         if not order_number:
+            self.awaiting_order_number = True
+
             return (
                 "Claro. Para consultar el estado de tu compra, indícame el "
                 "número de pedido que aparece en tu confirmación de compra."
             )
 
         if not email:
+            self.awaiting_order_number = False
             self.pending_order_number = order_number
+
             return (
-                f"Encontré el número de pedido **{order_number}**. Para proteger "
+                f"Encontré el número de pedido *{order_number}*. Para proteger "
                 "la información de tu compra, indícame el correo electrónico "
                 "que utilizaste al realizar el pedido."
             )
@@ -81,6 +102,7 @@ class OrderTrackingService:
             email=email,
         )
         self.pending_order_number = None
+        self.awaiting_order_number = False
 
         if not order:
             return (
