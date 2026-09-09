@@ -95,10 +95,18 @@ class OrderTrackingService:
         tracking_code = str(order.get("tracking_code") or "").strip()
         carrier_order_number = str(order.get("tracking_order_number") or "").strip()
 
-        lines = [
-            f"✅ **Pedido {order_number} verificado**",
-            f"**Estado:** {status or 'Sin estado disponible'}",
-        ]
+        # WooCommerce puede mantener el pedido en "on-hold" incluso después
+        # de registrar el envío. Si ya existe transportista + tracking,
+        # mostramos al cliente el estado logístico más útil sin alterar el
+        # estado original guardado en WooCommerce.
+        has_shipping_tracking = bool(carrier and tracking_code)
+
+        lines = [f"✅ **Pedido {order_number} verificado**"]
+
+        if has_shipping_tracking:
+            lines.append("📦 **Tu pedido ya fue enviado y tiene seguimiento disponible.**")
+        else:
+            lines.append(f"**Estado:** {status or 'Sin estado disponible'}")
 
         if carrier:
             lines.append(f"**Transportista:** {carrier}")
@@ -111,13 +119,15 @@ class OrderTrackingService:
 
         if carrier.lower() == "shalom" and tracking_code and carrier_order_number:
             lines.append(
-                "Puedes rastrearlo en la web oficial de Shalom: "
-                "https://shalom.com.pe/rastrea/"
+                "[🚚 **Rastrear mi pedido en Shalom**](https://shalom.com.pe/rastrea/)"
+            )
+            lines.append(
+                "En Shalom necesitarás el **N.º de orden del transportista** y el "
+                "**código de seguimiento** mostrados arriba."
             )
         elif carrier.lower().startswith("olva") and tracking_code:
             lines.append(
-                "Puedes rastrearlo desde la web oficial de Olva Courier: "
-                "https://www.olvacourier.com/"
+                "[🚚 **Rastrear mi pedido en Olva Courier**](https://www.olvacourier.com/)"
             )
         elif not tracking_code:
             lines.append(
