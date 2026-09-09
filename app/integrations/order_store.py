@@ -50,9 +50,25 @@ class OrderStore:
         if not order_id:
             raise ValueError("order_id es obligatorio para guardar el pedido")
 
+        # El plugin seguro v0.1.2 envía los datos mínimos del comprador bajo
+        # `customer`. Conservamos compatibilidad con eventos antiguos que usaban
+        # `billing`, pero priorizamos el nuevo formato para no depender de datos
+        # personales que ya no es necesario transmitir.
+        customer = payload.get("customer") or {}
         billing = payload.get("billing") or {}
         tracking = payload.get("tracking") or {}
         updated_at = datetime.now(timezone.utc).isoformat()
+
+        email = str(
+            customer.get("email")
+            or billing.get("email")
+            or ""
+        ).strip().casefold()
+
+        # La columna se mantiene por compatibilidad con bases ya creadas. El
+        # plugin seguro no envía teléfono, por lo que quedará vacío en eventos
+        # nuevos.
+        phone = str(billing.get("phone") or "").strip()
 
         try:
             total = float(payload.get("total")) if payload.get("total") not in (None, "") else None
@@ -87,8 +103,8 @@ class OrderStore:
                     str(payload.get("status") or ""),
                     total,
                     payload.get("currency"),
-                    str(billing.get("email") or "").strip().lower(),
-                    str(billing.get("phone") or "").strip(),
+                    email,
+                    phone,
                     str(tracking.get("carrier") or "").strip(),
                     str(tracking.get("code") or "").strip(),
                     str(tracking.get("carrier_order_number") or "").strip(),
@@ -117,7 +133,7 @@ class OrderStore:
         order_number: str,
         email: str,
     ) -> dict[str, Any] | None:
-        normalized_email = email.strip().lower()
+        normalized_email = email.strip().casefold()
         with self._connect() as conn:
             row = conn.execute(
                 """
