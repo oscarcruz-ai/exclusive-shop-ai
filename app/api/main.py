@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from app.agents.sales_agent import SalesAgent
 from app.analytics.analytics_store import AnalyticsStore
 from app.integrations.order_store import OrderStore
+from app.integrations.event_replay_store import EventReplayStore
 
 app = FastAPI(
     title="Exclusive Shop AI",
@@ -23,6 +24,7 @@ app = FastAPI(
 bot = SalesAgent()
 analytics = AnalyticsStore(Path("data/shopagent_events.sqlite3"))
 orders = OrderStore(Path("data/shopagent_orders.sqlite3"))
+replay_events = EventReplayStore(Path("data/shopagent_replay.sqlite3"))
 
 SIGNATURE_MAX_AGE_SECONDS = 300
 
@@ -189,6 +191,18 @@ async def receive_integration_event(
             detail=f"Evento no soportado: {parsed.event}",
         )
 
+    # Protección contra replay: después de autenticar y validar la firma,
+    # cada event_id firmado puede reservarse una sola vez por tenant.
+    if _require_hmac() or signature_headers_present:
+        event_id_for_replay = (x_shopagent_event_id or "").strip()
+        if not replay_events.claim(parsed.tenant_id, event_id_for_replay):
+            raise HTTPException(
+                status_code=409,
+                detail="El evento ya fue recibido anteriormente.",
+            )
+
+        replay_events.cleanup()
+
     order_id = parsed.data.get("order_id")
     value = parsed.data.get("total")
     currency = parsed.data.get("currency")
@@ -206,22 +220,33 @@ async def receive_integration_event(
         "payload": parsed.data,
     }
 
-    recorded_at = analytics.record(
-        tenant_id=parsed.tenant_id,
-        event_type=parsed.event,
-        channel="woocommerce",
-        order_id=order_id,
-        value=numeric_value,
-        currency=currency,
-        metadata=json.dumps(metadata, ensure_ascii=False, default=str),
-    )
+    event_id_for_replay = (x_shopagent_event_id or "").strip()
+    replay_claimed = _require_hmac() or signature_headers_present
 
-    order_synced_at = None
-    if parsed.event in {"order.created", "order.updated"}:
-        try:
+    try:
+        order_synced_at = None
+        if parsed.event in {"order.created", "order.updated"}:
             order_synced_at = orders.upsert(parsed.tenant_id, parsed.data)
-        except ValueError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+        recorded_at = analytics.record(
+            tenant_id=parsed.tenant_id,
+            event_type=parsed.event,
+            channel="woocommerce",
+            order_id=order_id,
+            value=numeric_value,
+            currency=currency,
+            metadata=json.dumps(metadata, ensure_ascii=False, default=str),
+        )
+
+    except ValueError as exc:
+        if replay_claimed:
+            replay_events.release(parsed.tenant_id, event_id_for_replay)
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    except Exception:
+        if replay_claimed:
+            replay_events.release(parsed.tenant_id, event_id_for_replay)
+        raise
 
     return {
         "ok": True,
