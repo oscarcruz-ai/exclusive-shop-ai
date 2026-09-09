@@ -17,7 +17,7 @@ from app.integrations.order_store import OrderStore
 app = FastAPI(
     title="Exclusive Shop AI",
     description="API del asistente inteligente de Exclusive Shop",
-    version="1.3.0",
+    version="1.3.1",
 )
 
 bot = SalesAgent()
@@ -49,6 +49,15 @@ def _plugin_secret() -> str:
             detail="La autenticación del plugin no está configurada en el servidor.",
         )
     return expected
+
+
+def _require_hmac() -> bool:
+    return os.getenv("SHOPAGENT_REQUIRE_HMAC", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 def _verify_plugin_api_key(authorization: str | None, expected: str) -> None:
@@ -145,14 +154,28 @@ async def receive_integration_event(
     except Exception as exc:
         raise HTTPException(status_code=422, detail="Evento inválido.") from exc
 
-    _verify_plugin_signature(
-        raw_body=raw_body,
-        expected_secret=expected_secret,
-        timestamp=x_shopagent_timestamp,
-        event_id=x_shopagent_event_id,
-        signature=x_shopagent_signature,
-        body_event_id=parsed.event_id,
+    # Migración segura: mientras SHOPAGENT_REQUIRE_HMAC no esté activado,
+    # el plugin v0.1.1 puede seguir enviando eventos con Bearer solamente.
+    # En cuanto el plugin v0.1.2 envía cualquiera de los headers de firma,
+    # la firma completa se vuelve obligatoria y se valida. Tras actualizar
+    # WordPress, activar SHOPAGENT_REQUIRE_HMAC=true elimina el modo legado.
+    signature_headers_present = any(
+        (
+            x_shopagent_timestamp,
+            x_shopagent_event_id,
+            x_shopagent_signature,
+        )
     )
+
+    if _require_hmac() or signature_headers_present:
+        _verify_plugin_signature(
+            raw_body=raw_body,
+            expected_secret=expected_secret,
+            timestamp=x_shopagent_timestamp,
+            event_id=x_shopagent_event_id,
+            signature=x_shopagent_signature,
+            body_event_id=parsed.event_id,
+        )
 
     allowed_events = {
         "integration.test",
